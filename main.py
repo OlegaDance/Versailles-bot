@@ -3,8 +3,8 @@ import webbrowser
 from telebot import types
 import re
 
-waiting_for_phone = {}  # Словник для збереження стану очікування номера телефону
-user_phone = {}  # Словник для збереження номерів телефонів користувачів
+waiting_for_phone = {}
+user_phone = {}
 
 bot = telebot.TeleBot('6657330380:AAHtfeCcno4rtsoXY7BuGnzPM28MjkZgo4o')
 
@@ -33,41 +33,43 @@ def main(message):
     def yes_callback(query):
         chat_id = query.message.chat.id
         bot.send_message(chat_id, "Введіть свій номер телефону.")
-        waiting_for_phone[chat_id] = True  # Встановлюємо стан очікування номера телефону
+        waiting_for_phone[chat_id] = True
 
     @bot.message_handler(func=lambda message: waiting_for_phone.get(message.chat.id, False))
     def phone_callback(message):
         chat_id = message.chat.id
         phone_number = message.text
 
-        # Перевірка, що введений номер містить тільки цифри
-        if re.match(r"^\d+$", phone_number):
-            user_phone[chat_id] = phone_number  # Зберігаємо номер телефону в словнику user_phone
+        if re.match(r"^\d{10}$", phone_number):
+            user_phone[chat_id] = phone_number
 
-            # Створюємо InlineKeyboard для "Редагувати" і "Підтвердити"
+
             edit_confirm_markup = types.InlineKeyboardMarkup()
             edit_confirm_markup.row(
                 types.InlineKeyboardButton('Редагувати', callback_data='edit'),
                 types.InlineKeyboardButton('Підтвердити', callback_data='confirm')
             )
 
-            bot.send_message(chat_id, f"Ви ввели номер телефону: {phone_number}", reply_markup=edit_confirm_markup)
-            waiting_for_phone[chat_id] = False  # Завершуємо очікування номера телефону
+            bot.send_message(chat_id, f"Перевірте ваш номер телефону {phone_number}", reply_markup=edit_confirm_markup)
+            waiting_for_phone[chat_id] = False
         else:
-            bot.send_message(chat_id, "Введений номер повинен містити тільки цифри. Спробуйте ще раз.")
+            bot.send_message(chat_id, "Введений номер повинен містити тільки 10 цифр. Спробуйте ще раз.")
+
+
+
 
     @bot.callback_query_handler(func=lambda call: call.data == 'edit')
     def edit_phone(query):
         chat_id = query.message.chat.id
         bot.send_message(chat_id, "Введіть новий номер телефону.")
-        waiting_for_phone[chat_id] = True  # Встановлюємо стан очікування нового номера телефону
+        waiting_for_phone[chat_id] = True
 
     @bot.callback_query_handler(func=lambda call: call.data == 'confirm')
     def confirm_phone(query):
         chat_id = query.message.chat.id
         phone_number = user_phone.get(chat_id)
         bot.send_message(chat_id, f"Підтверджено номер телефону почикайте поки я шукаю вас в своїх даних...")
-        waiting_for_phone[chat_id] = False  # Завершуємо очікування номера телефону
+        waiting_for_phone[chat_id] = False
 
     @bot.callback_query_handler(func=lambda call: call.data == 'no')
     def no_callback(query):
